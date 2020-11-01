@@ -1,15 +1,15 @@
 require('dotenv').config()
 const express = require('express')
 const uuid = require('uuid/v4')
-const logger = require('../winston-logger')
+const logger = require('./winston-logger')
 //const morgan = require('morgan')
 //const cors = require('cors')
 //const helmet = require('helmet')
-const BOOKMARKS = require('./BOOKMARKS')
+const bookmarks = require('./BOOKMARKS')
 
 const { NODE_ENV } = require('./config')
 
-const app = express()
+//const app = express()
 
 const bookmarksRouter = express.Router()
 const bodyParser = express.json()
@@ -27,9 +27,10 @@ const bodyParser = express.json()
 
 bookmarksRouter.route('/bookmarks')
   .get((req, res) => {
-    res.json(BOOKMARKS.bookmarks)
+    res.json(bookmarks)
   })
   .post(bodyParser, (req, res) => {
+    console.log(req.body)
     for (const field of ['title', 'url', 'rating']) {
       if (!req.body[field]){
         logger.error(`${field} required!`)
@@ -37,12 +38,18 @@ bookmarksRouter.route('/bookmarks')
       }
     }
 
-    const newBookmark = {title , url , description , rating , id: uuid}
-    BOOKMARKS.bookmarks.push(newBookmark)
-    logger.info(`Bookmark successfully added - ${bookmark.title} , ${bookmark.id}`)
+    const title = req.body.title
+    const url = req.body.url
+    const description = req.body.description
+    const rating = req.body.rating
+
+
+    const newBookmark = {title , url , description , rating , id: uuid()}
+    bookmarks.push(newBookmark)
+    logger.info(`Bookmark successfully added - ${newBookmark.title} , ${newBookmark.id}`)
         res.status(201)
-        .location(`http://localhost:8000/bookmarks/${bookmark.id}`)
-        .json(bookmark)
+        .location(`http://localhost:8000/bookmarks/${newBookmark.id}`)
+        .json(newBookmark)
 
 
   })
@@ -52,7 +59,7 @@ bookmarksRouter.route('/bookmarks')
   .get((req, res) => {
     const { bookmarkId } = req.params
 
-    const bookmark = BOOKMARKS.bookmarks.find(c => c.id == bookmarkId)
+    const bookmark = bookmarks.find(c => c.id == bookmarkId)
 
     if (!bookmark) {
       logger.error(`Bookmark not found - check ID`)
@@ -64,8 +71,10 @@ bookmarksRouter.route('/bookmarks')
     res.json(bookmark)
   })
   .delete((req, res) => {
+    
     const {bookmarkId} = req.params
-    const index = BOOKMARKS.bookmarks.findIndex(bookmark => bookmark.id === bookmarkId)
+    const index = bookmarks.findIndex(bookmark => bookmark.id === bookmarkId)
+    const bookmark = bookmarks.find(c => c.id == bookmarkId)
 
     if(index === -1){
       logger.error(`Bookmark ID doesn't exist!`)
@@ -73,7 +82,7 @@ bookmarksRouter.route('/bookmarks')
       .send(`Bookmark ID doesn't exist!`)
     }
     //splice removes the bookmark at the const index
-    BOOKMARKS.bookmarks.splice(index, 1)
+    bookmarks.splice(index, 1)
 
     logger.info(`Bookmark sucessfully deleted - ${bookmark.title} , ${bookmark.id} `)
     res.status(204).end()
@@ -98,4 +107,4 @@ bookmarksRouter.route('/bookmarks')
      //})
     
 
-module.exports = app
+module.exports = bookmarksRouter
